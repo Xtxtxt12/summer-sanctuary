@@ -138,7 +138,17 @@
     let shuffleSeed = null;         // null=按日期种子；否则随机种子（换一批）
     let refreshOverride = null;     // 换一批后的有序列表（覆盖常规列表）
     let shownIds = new Set();       // 已推送过的视频 id（避免「换一批」重复）
-    let parsedHistory = [];         // 当前会话内解析过的视频（置顶「热门推荐」）
+    let parsedHistory = [];         // 解析记录（持久化到 Store，解析导航栏内展示）
+
+    function loadHistory() {
+        try {
+            const raw = window.Store.get('videoParseHistory');
+            if (Array.isArray(raw)) parsedHistory = raw;
+        } catch (e) { /* ignore */ }
+    }
+    function saveHistory() {
+        try { window.Store.set('videoParseHistory', parsedHistory.slice(0, 30)); } catch (e) { /* ignore */ }
+    }
     let isParsing = false;          // 正在解析
     let parseCooldown = { url: '', ts: 0 }; // 单条视频 30s 冷却
 
@@ -295,7 +305,7 @@
             url: url, _p: p, _parsed: true, _parseUrl: url,
             thumbnail, emotion: report.emotion, tagline: report.hookExcerpt,
             script: report.script, radar: defaultRadarFor(h),
-            report, transcript
+            report, transcript, parsedAt: Date.now()
         };
     }
 
@@ -337,6 +347,7 @@
             const v = buildParsedVideo(url);
             parsedHistory = parsedHistory.filter(x => x.url !== url); // 同链接去重
             parsedHistory.unshift(v);
+            saveHistory();
             currentFeatured = v;
             currentFeaturedId = v.id;
             isParsing = false;
@@ -345,9 +356,9 @@
                 const t = btn.querySelector('.material-symbols-outlined');
                 if (t) t.textContent = 'auto_awesome';
             }
-            // 切换对应平台标签
-            $$('#videoPlatformTabs .tv-chip').forEach(t => t.classList.toggle('active', t.dataset.platform === v._p));
-            platform = v._p;
+            // 解析完成后进入「解析」导航栏，展示自动播放 + 精选爆点拆解
+            $$('#videoPlatformTabs .tv-chip').forEach(t => t.classList.toggle('active', t.dataset.platform === 'parse'));
+            platform = 'parse';
             render();
             const f2 = $('#videoFeed'); if (f2) f2.scrollIntoView({ behavior: 'smooth', block: 'start' });
             toast('视频解析完成，已生成爆点拆解');
@@ -701,8 +712,157 @@
         bindFeed(feed);
     }
 
+    /* ---------- 解析导航栏 ---------- */
+    function parsePlayerHTML(v) {
+        const meta = v._parsed
+            ? `@${esc(v.author)} · ${v.views} 播放 · ${esc(v.publishTime)} 发布`
+            : `@${esc(v.author)} · ${v.views} 播放`;
+        return `
+            <div class="tv-player" data-url="${esc(v.url)}">
+                ${v._parsed ? `<div class="tv-rank tv-rank--parse"><span class="material-symbols-outlined">auto_awesome</span>已解析</div>` : ''}
+                <div class="tv-player-poster" style="background-image:url('${esc(v.thumbnail)}')">
+                    <div class="tv-player-overlay">
+                        <div class="tv-player-badge"><span class="tv-eq"><i></i><i></i><i></i><i></i></span>自动播放中</div>
+                    </div>
+                    <div class="tv-player-info">
+                        <div class="tv-player-title">${esc(v.title)}</div>
+                        <div class="tv-player-meta">${meta}</div>
+                    </div>
+                    <div class="tv-player-progress"><span></span></div>
+                </div>
+            </div>`;
+    }
+
+    function curatedBurstHTML(v) {
+        const r = v.report;
+        if (!r) return '';
+        const scriptPicks = (v.script || []).slice(0, 3).map((s, i) => `
+            <div class="tv-burst-beat">
+                <span class="tv-burst-num">${i + 1}</span>
+                <div class="tv-burst-beat-body"><b>${esc(s.title)}</b><span>${esc(s.desc)}</span></div>
+            </div>`).join('');
+        const commentPicks = (r.comments || []).map((c, i) => `
+            <div class="tv-comment-row"><span class="tv-comment-num">${i + 1}</span>${esc(c)}</div>`).join('');
+        return `
+            <div class="tv-burst">
+                <div class="tv-burst-head">
+                    <h3><span class="material-symbols-outlined">auto_awesome</span>精选爆点拆解</h3>
+                    <button class="tv-copy-btn" data-copy-report="1">复制报告</button>
+                </div>
+                <div class="tv-burst-grid">
+                    <div class="tv-burst-card tv-burst-hook">
+                        <div class="tv-burst-label">① 黄金钩子</div>
+                        <div class="tv-burst-value"><span class="tv-hook-tag">${esc(r.hookType)}</span>${esc(r.hookExcerpt)}</div>
+                    </div>
+                    <div class="tv-burst-card">
+                        <div class="tv-burst-label">② 情绪引爆点</div>
+                        <div class="tv-burst-value"><span class="tv-emotion-dot"></span>${esc(r.emotion)}</div>
+                    </div>
+                    <div class="tv-burst-card tv-burst-reuse">
+                        <div class="tv-burst-label">③ 可复用爆款套路</div>
+                        <div class="tv-burst-value">${esc(r.reusable)}</div>
+                    </div>
+                </div>
+                <div class="tv-burst-comments">
+                    <div class="tv-burst-label">④ 高光评论 TOP ${r.comments ? r.comments.length : 0}</div>
+                    ${commentPicks || '<div class="tv-burst-value">暂无评论数据</div>'}
+                </div>
+                <div class="tv-burst-script">
+                    <div class="tv-burst-label">⑤ 关键脚本节点</div>
+                    <div class="tv-burst-beats">${scriptPicks}</div>
+                </div>
+            </div>`;
+    }
+
+    function parseRecordHTML(v) {
+        const pName = PLATFORM_NAME[v._p] || '未知平台';
+        const when = v.parsedAt ? new Date(v.parsedAt) : null;
+        const timeStr = when ? `${when.getMonth() + 1}月${when.getDate()}日 ${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}` : '';
+        return `
+            <div class="tv-parse-record" data-url="${esc(v.url)}">
+                <div class="tv-parse-record-thumb" style="background-image:url('${esc(v.thumbnail)}')"></div>
+                <div class="tv-parse-record-body">
+                    <div class="tv-parse-record-title">${esc(v.title)}</div>
+                    <div class="tv-parse-record-meta">
+                        <span class="tv-parse-record-pf">${esc(pName)}</span>
+                        <span class="dot"></span>
+                        <span>@${esc(v.author)}</span>
+                        ${timeStr ? `<span class="dot"></span><span>${timeStr}</span>` : ''}
+                    </div>
+                </div>
+                <span class="material-symbols-outlined tv-parse-record-arrow">chevron_right</span>
+            </div>`;
+    }
+
+    function openParsedRecord(url) {
+        const rec = parsedHistory.find(x => x.url === url);
+        if (!rec) { toast('记录已失效，请重新解析'); return; }
+        currentFeatured = rec;
+        currentFeaturedId = rec.id;
+        render();
+        const el = document.getElementById('tvFeatured');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderParseTab(feed) {
+        // 解析中
+        if (currentFeatured && currentFeatured._parsing) {
+            feed.innerHTML = `
+                <div class="tv-parsing">
+                    <div class="tv-spinner"></div>
+                    <p class="tv-parsing-title">正在解析视频…</p>
+                    <span class="tv-parsing-sub">识别平台 · 提取字幕/语音转写 · 抓取热门评论 · AI 拆解爆点（约 5–15 秒）</span>
+                </div>`;
+            return;
+        }
+        // 已打开某条解析结果：自动播放 + 精选爆点拆解
+        if (currentFeatured && currentFeatured._parsed) {
+            feed.innerHTML = `
+                <button class="tv-back-btn" id="parseBackBtn"><span class="material-symbols-outlined">arrow_back</span>返回解析记录</button>
+                ${parsePlayerHTML(currentFeatured)}
+                ${curatedBurstHTML(currentFeatured)}`;
+            const back = $('#parseBackBtn', feed);
+            if (back) back.addEventListener('click', () => { currentFeatured = null; currentFeaturedId = null; render(); });
+            const player = $('.tv-player', feed);
+            if (player) player.addEventListener('click', () => {
+                const u = player.dataset.url;
+                if (u && u !== '#') window.open(u, '_blank');
+            });
+            const copyBtn = $('[data-copy-report]', feed);
+            if (copyBtn) copyBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                const v = currentFeatured, r = v.report;
+                const text = `【深度拆解报告】\n标题：${v.title}\n① 开场钩子类型：${r.hookType} — ${r.hookExcerpt}\n② 核心情绪卖点：${r.emotion}\n③ 脚本结构：\n${r.script.map(s => '· ' + s.phase + '｜' + s.title + '：' + s.desc).join('\n')}\n④ 高频评论关注点(TOP3)：\n${r.comments.map((c, i) => (i + 1) + '. ' + c).join('\n')}\n⑤ 可复用套路：${r.reusable}\n⑥ 可优化短板：${r.weaknesses}`;
+                if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('报告已复制')).catch(() => toast('复制失败'));
+                else toast('当前环境不支持复制');
+            });
+            return;
+        }
+        // 默认：解析输入 + 解析记录
+        const hist = parsedHistory.slice(0, 30);
+        feed.innerHTML = `
+            <div class="tv-parse-panel">
+                <div class="tv-link-parse">
+                    <span class="material-symbols-outlined">link</span>
+                    <input type="text" id="videoLinkInput" placeholder="粘贴短视频分享链接，一键拆解爆点" maxlength="400" autocomplete="off">
+                    <button class="tv-parse-btn" id="videoParseBtn"><span class="material-symbols-outlined">auto_awesome</span>解析</button>
+                </div>
+                <p class="tv-parse-hint">支持 抖音 / 快手 / B站 / 小红书 分享链接，自动识别平台并生成爆点拆解</p>
+                <h2 class="tv-section-title">解析记录 <span class="tv-count">${hist.length}</span></h2>
+                ${hist.length
+                    ? `<div class="tv-parse-history">${hist.map(parseRecordHTML).join('')}</div>`
+                    : `<div class="empty-state"><div class="empty-icon">🔗</div><p>还没有解析记录</p><span>粘贴一条链接开始拆解吧</span></div>`}
+            </div>`;
+        const linkInput = $('#videoLinkInput', feed);
+        const parseBtn = $('#videoParseBtn', feed);
+        if (parseBtn) parseBtn.addEventListener('click', parseLink);
+        if (linkInput) linkInput.addEventListener('keydown', e => { if (e.key === 'Enter') parseLink(); });
+        $$('.tv-parse-record', feed).forEach(card => card.addEventListener('click', () => openParsedRecord(card.dataset.url)));
+    }
+
     function render() {
         const feed = $('#videoFeed');
+        if (platform === 'parse') { renderParseTab(feed); return; }
         if (query && platform !== 'saved') { renderSearch(feed); return; }
         renderFeed(feed);
     }
@@ -797,6 +957,7 @@
             linkInput.addEventListener('keydown', e => { if (e.key === 'Enter') parseLink(); });
         }
 
+        loadHistory();
         render();
     }
 
