@@ -11,6 +11,7 @@
     const DATA = window.DATA;
 
     const PLATFORM_NAME = { douyin: '抖音', kuaishou: '快手', bilibili: 'B站', xiaohongshu: '小红书' };
+    const PF_ICON = { douyin: '🎵', kuaishou: '⚡', bilibili: '📺', xiaohongshu: '📕' };
     const PLATFORM_SEARCH = {
         douyin: 'https://www.douyin.com/search/',
         kuaishou: 'https://www.kuaishou.com/search/video?searchKey=',
@@ -297,7 +298,7 @@
         const daysAgo = h % 20;
         const d = new Date(); d.setDate(d.getDate() - daysAgo);
         const publishTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const thumbnail = `https://picsum.photos/seed/${id}/800/500`;
+        const thumbnail = '';   // 离线工具无法获取真实封面，改用平台占位图，避免显示成“其他视频”
         const report = buildReport(url, p);
         const transcript = pick(TRANSCRIPT_POOL, h * 4);
         return {
@@ -414,7 +415,7 @@
         return `
             <div class="tv-report">
                 <div class="tv-report-head">
-                    <span class="material-symbols-outlined">auto_awesome</span>深度拆解报告
+                    <span class="material-symbols-outlined">auto_awesome</span>深度拆解报告 <span class="tv-burst-note">离线示例</span>
                     <button class="tv-copy-btn" data-copy-report="1">复制报告</button>
                 </div>
                 <div class="tv-report-item">
@@ -472,12 +473,15 @@
         const metaLine = v._parsed
             ? `<span>@${esc(v.author)}</span><span class="dot"></span><span>${v.views} 播放</span><span class="dot"></span><span>${esc(v.publishTime)} 发布</span>`
             : `<span>@${esc(v.author)}</span><span class="dot"></span><span>${v.views} 播放</span>`;
+        const thumbBg = v.thumbnail ? `background-image:url('${esc(v.thumbnail)}')` : `background:linear-gradient(135deg,var(--st-primary),#ff9a76)`;
+        const thumbPh = v.thumbnail ? '' : `<span class="tv-thumb-ph">${PF_ICON[v._p] || '🎬'}</span>`;
         const thumbHtml = `
-            <div class="tv-featured-thumb" style="background-image:url('${esc(v.thumbnail)}')">
+            <div class="tv-featured-thumb" style="${thumbBg}">
+                ${thumbPh}
                 <div class="tv-featured-gradient"></div>
                 ${v._parsed ? `<div class="tv-rank tv-rank--parse"><span class="material-symbols-outlined">auto_awesome</span>已解析</div>` : badge}
                 <div class="tv-featured-info">
-                    <div class="tv-featured-title">${esc(v.title)}</div>
+                    <div class="tv-featured-title">${esc(v.title)}${v._parsed ? ' <span class="tv-example-tag">示例</span>' : ''}</div>
                     <div class="tv-featured-meta">${metaLine}</div>
                 </div>
                 <button class="tv-play-btn" aria-label="播放"><span class="material-symbols-outlined">play_arrow</span></button>
@@ -523,9 +527,12 @@
         const savedFlag = isSaved(v.id);
         const tier = heatTier(v);
         const parsedBadge = v._parsed ? `<div class="tv-parsed-badge">已解析</div>` : '';
+        const thumbBg = v.thumbnail ? `background-image:url('${esc(v.thumbnail)}')` : `background:linear-gradient(135deg,var(--st-primary),#ff9a76)`;
+        const thumbPh = v.thumbnail ? '' : `<span class="tv-thumb-ph">${PF_ICON[v._p] || '🎬'}</span>`;
         return `
             <div class="tv-pipeline-card ${selected ? 'selected' : ''}" data-id="${v.id}" data-url="${esc(v.url)}">
-                <div class="tv-pipeline-thumb" style="background-image:url('${esc(v.thumbnail)}')">
+                <div class="tv-pipeline-thumb" style="${thumbBg}">
+                    ${thumbPh}
                     <div class="tv-pipeline-dur">${esc(v.dur)}</div>
                     <div class="tv-heat-badge tv-heat-${tier}">${HEAT_LABEL[tier]}</div>
                     ${parsedBadge}
@@ -717,16 +724,21 @@
         const meta = v._parsed
             ? `@${esc(v.author)} · ${v.views} 播放 · ${esc(v.publishTime)} 发布`
             : `@${esc(v.author)} · ${v.views} 播放`;
+        const linkShort = v.url.length > 60 ? v.url.slice(0, 58) + '…' : v.url;
+        const posterBg = v.thumbnail ? `background-image:url('${esc(v.thumbnail)}')` : `background:linear-gradient(135deg,var(--st-primary),#ff9a76)`;
+        const posterPh = v.thumbnail ? '' : `<span class="tv-thumb-ph tv-thumb-ph--big">${PF_ICON[v._p] || '🎬'}</span>`;
         return `
             <div class="tv-player" data-url="${esc(v.url)}">
                 ${v._parsed ? `<div class="tv-rank tv-rank--parse"><span class="material-symbols-outlined">auto_awesome</span>已解析</div>` : ''}
-                <div class="tv-player-poster" style="background-image:url('${esc(v.thumbnail)}')">
+                <div class="tv-player-poster" style="${posterBg}">
+                    ${posterPh}
                     <div class="tv-player-overlay">
                         <div class="tv-player-badge"><span class="tv-eq"><i></i><i></i><i></i><i></i></span>自动播放中</div>
                     </div>
                     <div class="tv-player-info">
-                        <div class="tv-player-title">${esc(v.title)}</div>
+                        <div class="tv-player-title">${esc(v.title)} <span class="tv-example-tag">示例</span></div>
                         <div class="tv-player-meta">${meta}</div>
+                        <div class="tv-player-source">解析链接：${esc(linkShort)}</div>
                     </div>
                     <div class="tv-player-progress"><span></span></div>
                 </div>
@@ -747,6 +759,7 @@
             <div class="tv-burst">
                 <div class="tv-burst-head">
                     <h3><span class="material-symbols-outlined">auto_awesome</span>精选爆点拆解</h3>
+                    <span class="tv-burst-note">离线示例</span>
                     <button class="tv-copy-btn" data-copy-report="1">复制报告</button>
                 </div>
                 <div class="tv-burst-grid">
@@ -778,20 +791,48 @@
         const pName = PLATFORM_NAME[v._p] || '未知平台';
         const when = v.parsedAt ? new Date(v.parsedAt) : null;
         const timeStr = when ? `${when.getMonth() + 1}月${when.getDate()}日 ${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}` : '';
+        const linkShort = v.url.length > 42 ? v.url.slice(0, 40) + '…' : v.url;
+        const thumbBg = v.thumbnail ? `background-image:url('${esc(v.thumbnail)}')` : `background:linear-gradient(135deg,var(--st-primary),#ff9a76)`;
+        const thumbPh = v.thumbnail ? '' : `<span class="tv-thumb-ph">${PF_ICON[v._p] || '🎬'}</span>`;
         return `
             <div class="tv-parse-record" data-url="${esc(v.url)}">
-                <div class="tv-parse-record-thumb" style="background-image:url('${esc(v.thumbnail)}')"></div>
+                <div class="tv-parse-record-thumb" style="${thumbBg}">${thumbPh}</div>
                 <div class="tv-parse-record-body">
-                    <div class="tv-parse-record-title">${esc(v.title)}</div>
+                    <div class="tv-parse-record-title">${esc(v.title)} <span class="tv-example-tag">示例</span></div>
                     <div class="tv-parse-record-meta">
                         <span class="tv-parse-record-pf">${esc(pName)}</span>
                         <span class="dot"></span>
                         <span>@${esc(v.author)}</span>
                         ${timeStr ? `<span class="dot"></span><span>${timeStr}</span>` : ''}
                     </div>
+                    <div class="tv-parse-record-url">${esc(linkShort)}</div>
                 </div>
-                <span class="material-symbols-outlined tv-parse-record-arrow">chevron_right</span>
+                <div class="tv-parse-record-right">
+                    <span class="material-symbols-outlined tv-parse-record-arrow">chevron_right</span>
+                    <button class="tv-parse-record-del" data-del-url="${esc(v.url)}" aria-label="删除该记录"><span class="material-symbols-outlined">delete_outline</span></button>
+                </div>
             </div>`;
+    }
+
+    function deleteParseRecord(url) {
+        parsedHistory = parsedHistory.filter(x => x.url !== url);
+        saveHistory();
+        if (currentFeatured && currentFeatured._parsed && currentFeatured.url === url) {
+            currentFeatured = null;
+            currentFeaturedId = null;
+        }
+        render();
+        toast('已删除该解析记录');
+    }
+
+    function clearParseHistory() {
+        if (!parsedHistory.length) return;
+        parsedHistory = [];
+        saveHistory();
+        currentFeatured = null;
+        currentFeaturedId = null;
+        render();
+        toast('已清空全部解析记录');
     }
 
     function openParsedRecord(url) {
@@ -848,16 +889,25 @@
                     <button class="tv-parse-btn" id="videoParseBtn"><span class="material-symbols-outlined">auto_awesome</span>解析</button>
                 </div>
                 <p class="tv-parse-hint">支持 抖音 / 快手 / B站 / 小红书 分享链接，自动识别平台并生成爆点拆解</p>
-                <h2 class="tv-section-title">解析记录 <span class="tv-count">${hist.length}</span></h2>
+                <h2 class="tv-section-title">解析记录 <span class="tv-count">${hist.length}</span>${hist.length ? `<button class="tv-clear-btn" id="parseClearBtn"><span class="material-symbols-outlined">delete_sweep</span>清空</button>` : ''}</h2>
                 ${hist.length
                     ? `<div class="tv-parse-history">${hist.map(parseRecordHTML).join('')}</div>`
-                    : `<div class="empty-state"><div class="empty-icon">🔗</div><p>还没有解析记录</p><span>粘贴一条链接开始拆解吧</span></div>`}
+                    : `<div class="empty-state"><div class="empty-icon">📭</div><p>还没有解析记录</p><span>粘贴一条链接开始拆解吧</span></div>`}
             </div>`;
         const linkInput = $('#videoLinkInput', feed);
         const parseBtn = $('#videoParseBtn', feed);
         if (parseBtn) parseBtn.addEventListener('click', parseLink);
         if (linkInput) linkInput.addEventListener('keydown', e => { if (e.key === 'Enter') parseLink(); });
-        $$('.tv-parse-record', feed).forEach(card => card.addEventListener('click', () => openParsedRecord(card.dataset.url)));
+        $$('.tv-parse-record', feed).forEach(card => card.addEventListener('click', e => {
+            if (e.target.closest('.tv-parse-record-del')) return;
+            openParsedRecord(card.dataset.url);
+        }));
+        $$('.tv-parse-record-del', feed).forEach(btn => btn.addEventListener('click', e => {
+            e.stopPropagation();
+            deleteParseRecord(btn.dataset.delUrl);
+        }));
+        const clearBtn = $('#parseClearBtn', feed);
+        if (clearBtn) clearBtn.addEventListener('click', clearParseHistory);
     }
 
     function render() {

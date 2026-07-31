@@ -1365,6 +1365,20 @@ input,textarea { outline:none; }
 .tv-parsing-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:1rem; font-weight:700; color:var(--st-on-surface); }
 .tv-parsing-sub { font-size:.75rem; color:var(--st-on-surface-variant); line-height:1.6; max-width:18rem; }
 
+/* 解析记录：删除 / 清空 / 示例标签 / 真实链接 / 占位图 */
+.tv-parse-record-right { display:flex; align-items:center; gap:.05rem; flex-shrink:0; }
+.tv-parse-record-del { width:2rem; height:2rem; border:none; border-radius:50%; background:transparent; color:var(--st-on-surface-variant); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.tv-parse-record-del:active { background:#ffdad6; color:#b3261e; }
+.tv-parse-record-del .material-symbols-outlined { font-size:1.25rem; }
+.tv-parse-record-url { font-size:.6875rem; color:var(--st-on-surface-variant); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:.85; }
+.tv-example-tag { display:inline-block; margin-left:.3rem; padding:.05rem .45rem; border-radius:999px; background:#ffd8e4; color:#7a2e3f; font-size:.625rem; font-weight:700; vertical-align:middle; }
+.tv-clear-btn { margin-left:auto; display:inline-flex; align-items:center; gap:.25rem; height:1.9rem; padding:0 .7rem; border-radius:999px; border:1px solid var(--st-surface-container); background:var(--st-surface); color:var(--st-on-surface-variant); font-size:.75rem; font-weight:600; cursor:pointer; }
+.tv-clear-btn .material-symbols-outlined { font-size:1rem; }
+.tv-clear-btn:active { background:#ffdad6; color:#b3261e; border-color:#ffb3b3; }
+.tv-burst-note { margin-left:.5rem; padding:.1rem .5rem; border-radius:999px; background:#ffd8e4; color:#7a2e3f; font-size:.625rem; font-weight:700; }
+.tv-thumb-ph { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1; font-size:1.6rem; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); pointer-events:none; }
+.tv-thumb-ph--big { font-size:3.25rem; opacity:.85; }
+
 /* ===== Responsive (desktop keeps mobile ratio centered) ===== */
 @media (min-width: 640px) {
   body { background: var(--st-surface-container-high); }
