@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#fcf9f8" id="themeColor">
+    <title>夏天 · 创作工作台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="css/style.css?v=20260731au">
+</head>
+<body>
+    <div id="app">
+        <!-- 流体渐变背景 -->
+        <div class="st-blob st-blob--blue"></div>
+        <div class="st-blob st-blob--orange"></div>
+        <div class="st-blob st-blob--purple"></div>
+
+        <!-- 顶部栏：全局搜索 + 主题切换 + 设置/头像 -->
+        <header id="topbar">
+            <div class="inner">
+                <div class="st-search-wrap">
+                    <span class="material-symbols-outlined icon">search</span>
+                    <input type="text" class="st-search-input" id="globalSearch" placeholder="搜索单词、释义…" maxlength="40">
+                </div>
+                <button class="st-btn-icon" id="themeToggle" aria-label="切换主题">
+                    <span class="material-symbols-outlined" id="themeIcon">light_mode</span>
+                </button>
+                <button class="st-btn-icon" id="settingsBtn" aria-label="设置">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+                <div class="st-avatar">夏</div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="st-main" id="mainContent">
+            <div class="page-container" id="pageContainer">
+
+                <!-- ===================== 每日单词 ===================== -->
+                <section class="page active" id="page-words">
+                    <div class="st-content">
+                        <div class="tab-row" id="wordBankTabs">
+                            <button class="tab-chip active" data-bank="daily">基础词汇</button>
+                            <button class="tab-chip" data-bank="cet4">四级词汇</button>
+                            <button class="tab-chip" data-bank="custom">我的词汇本</button>
+                            <button class="tab-chip" data-bank="essay">作文本</button>
+                            <button class="tab-chip" data-bank="stats">学习统计</button>
+                        </div>
+
+                        <!-- 学习视图（参考截图样式） -->
+                        <div id="wordStudyView">
+                            <div class="word-study-header">
+                                <button class="word-back-btn" id="wordBackBtn" aria-label="返回">
+                                    <span class="material-symbols-outlined">arrow_back_ios_new</span>
+                                </button>
+                                <div class="word-progress-row">
+                                    <div class="word-progress-top" id="wordProgressTop">0 / 0</div>
+                                    <button class="word-review-btn" id="wordReviewBtn" disabled aria-label="本组复习"><span class="material-symbols-outlined">fact_check</span>本组复习</button>
+                                </div>
+                                <div class="word-header-actions">
+                                    <button class="word-icon-btn" id="wordSearchToggleBtn" aria-label="搜索"><span class="material-symbols-outlined">search</span></button>
+                                    <button class="word-icon-btn" id="wordSpeakBtn" aria-label="朗读"><span class="material-symbols-outlined">volume_up</span></button>
+                                    <button class="word-icon-btn" id="saveWordBtn" aria-label="收藏"><span class="material-symbols-outlined">star</span></button>
+                                    <button class="word-icon-btn" id="wordMoreBtn" aria-label="更多"><span class="material-symbols-outlined">more_vert</span></button>
+                                </div>
+                            </div>
+
+                            <div class="word-cat-tabs" id="wordCatTabs">
+                                <button class="word-cat-chip active" data-cat="op">操作词</button>
+                                <button class="word-cat-chip" data-cat="gt">通用名词</button>
+                                <button class="word-cat-chip" data-cat="pt">具象名词</button>
+                                <button class="word-cat-chip" data-cat="qg">性质形容词</button>
+                                <button class="word-cat-chip" data-cat="qo">反义词组</button>
+                            </div>
+
+                            <div class="word-study-body" id="wordStudyBody">
+                                <div class="word-text" id="wordText">—</div>
+                                <div class="word-phonetic-row" id="wordPhoneticRow">
+                                    <span class="word-phonetic-tag">美</span>
+                                    <span class="word-phonetic" id="wordPhonetic"></span>
+                                    <button class="word-mini-speak" id="wordMiniSpeakBtn" aria-label="朗读"><span class="material-symbols-outlined">play_arrow</span></button>
+                                </div>
+                                <div class="word-meaning" id="wordMeaning"></div>
+
+                                <div class="word-example-card" id="wordExampleCard">
+                                    <div class="word-example-head">
+                                        <span class="word-example-label">Example</span>
+                                        <button class="word-example-random" id="wordRandomExampleBtn">
+                                            <span class="material-symbols-outlined">shuffle</span>随机例句
+                                        </button>
+                                    </div>
+                                    <div class="word-example-en" id="wordExample"></div>
+                                    <div class="word-example-cn" id="wordExampleTrans"></div>
+                                </div>
+                            </div>
+
+                            <div class="word-bottom-actions">
+                                <button class="word-prev-btn" id="prevWordBtn">上一词</button>
+                                <button class="word-next-btn" id="nextWordBtn">下一词</button>
+                            </div>
+                        </div>
+
+                        <!-- 本组复习视图（20 词平铺） -->
+                        <div id="wordReviewView" style="display:none;">
+                            <div class="word-review-header">
+                                <button class="word-back-btn" id="reviewBackBtn" aria-label="返回"><span class="material-symbols-outlined">arrow_back_ios_new</span></button>
+                                <div class="word-review-title">本组复习</div>
+                                <label class="word-review-hide"><input type="checkbox" id="reviewHideMastered"> 隐藏已掌握</label>
+                            </div>
+                            <div class="word-review-grid" id="wordReviewGrid"></div>
+                        </div>
+
+                        <!-- 搜索视图 -->
+                        <div id="wordSearchView" style="display:none;">
+                            <div class="word-search-header">
+                                <button class="word-back-btn" id="wordSearchBackBtn" aria-label="返回">
+                                    <span class="material-symbols-outlined">arrow_back_ios_new</span>
+                                </button>
+                                <input type="text" class="word-search-input" id="wordSearchInput" placeholder="输入英文或中文释义搜索…" maxlength="40">
+                                <button class="word-search-clear" id="wordSearchClear"><span class="material-symbols-outlined">close</span></button>
+                            </div>
+                            <div class="word-search-results" id="wordSearchResults"></div>
+                        </div>
+
+                        <!-- 我的词汇本视图 -->
+                        <div id="wordbookListView" style="display:none;">
+                            <div class="wordbook-add-bar">
+                                <input type="text" id="cwWord" placeholder="单词" maxlength="40">
+                                <input type="text" id="cwPhonetic" placeholder="音标" maxlength="40">
+                                <input type="text" id="cwMeaning" placeholder="中文释义" maxlength="120">
+                                <button class="btn-primary" id="addCustomWordBtn">添加</button>
+                            </div>
+                            <div class="wordbook-list" id="wordbookList"></div>
+                        </div>
+
+                        <!-- 作文本视图 -->
+                        <div id="essayView" style="display:none;">
+                            <div class="essay-toolbar">
+                                <input type="text" class="essay-search" id="essaySearch" placeholder="搜索作文（英文 / 中文）…" maxlength="60">
+                                <button class="btn-ghost essay-cat-manage" id="essayCatManageBtn">分类管理</button>
+                                <button class="btn-ghost essay-wordbook" id="essayWordbookBtn">📚 作文生词本</button>
+                                <button class="btn-primary essay-new" id="essayNewBtn">＋ 新建作文</button>
+                            </div>
+                            <div class="essay-cat-filter" id="essayCatFilter"></div>
+                            <div class="essay-list" id="essayList"></div>
+                        </div>
+
+                        <!-- 学习统计视图 -->
+                        <div id="statsView" style="display:none;">
+                            <div class="stats-hero">
+                                <div class="st-progress-ring" id="statsRing">
+                                    <svg viewBox="0 0 100 100">
+                                        <defs><linearGradient id="stProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0058bc"/><stop offset="100%" stop-color="#553C9A"/></linearGradient></defs>
+                                        <circle class="track" cx="50" cy="50" r="45"></circle>
+                                        <circle class="fill" id="statsRingFill" cx="50" cy="50" r="45" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                    </svg>
+                                    <div class="st-progress-inner">
+                                        <span id="statsLearned">0</span>
+                                        <div></div>
+                                        <span id="statsTotal">0</span>
+                                        <span class="st-label" style="margin-top:.5rem;">Mastery</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="st-card stats-summary">
+                                <div class="stats-summary-grid">
+                                    <div class="stats-summary-item"><span class="material-symbols-outlined" style="color:var(--st-primary);font-size:28px;">check_circle</span><b id="statsLearned2">0</b><span>Learned</span></div>
+                                    <div class="stats-summary-item"><span class="material-symbols-outlined" style="color:var(--st-secondary-container);font-size:28px;">local_fire_department</span><b id="statsStreak">1</b><span>Streak</span></div>
+                                    <div class="stats-summary-item"><span class="material-symbols-outlined" style="color:var(--st-morandi-purple);font-size:28px;">target</span><b id="statsAccuracy">--</b><span>Accuracy</span></div>
+                                </div>
+                            </div>
+                            <div class="stats-section">
+                                <div class="st-flex st-justify-between st-items-center" style="margin-bottom:.75rem;">
+                                    <h3 class="st-title-sm">学习日历</h3>
+                                    <span class="st-label">当日学习时长见下方</span>
+                                </div>
+                                <div class="st-card stats-cal-card">
+                                    <div class="st-cal">
+                                        <div class="st-cal-head">
+                                            <button class="st-cal-nav" id="statsCalPrev" aria-label="上个月"><span class="material-symbols-outlined">chevron_left</span></button>
+                                            <span class="st-cal-title" id="statsCalMonthLabel">—</span>
+                                            <button class="st-cal-nav" id="statsCalNext" aria-label="下个月"><span class="material-symbols-outlined">chevron_right</span></button>
+                                        </div>
+                                        <div class="st-cal-dow"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+                                        <div class="st-cal-grid" id="statsCalGrid"></div>
+                                        <div class="st-cal-detail" id="statsCalDetail"></div>
+                                        <div class="st-cal-legend">
+                                            <span><i class="dot l0"></i>0</span>
+                                            <span><i class="dot l1"></i>1-2</span>
+                                            <span><i class="dot l2"></i>3-5</span>
+                                            <span><i class="dot l3"></i>6-9</span>
+                                            <span><i class="dot l4"></i>10+</span>
+                                            <span class="st-cal-legend-tip">格内数字 = 当天记的单词数</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stats-section">
+                                <h3 class="st-title-sm" style="margin-bottom:.75rem;">Milestones</h3>
+                                <div class="stats-milestones" id="statsMilestones"></div>
+                            </div>
+                        </div>
+
+                        <!-- 作文编辑弹窗 -->
+                        <div class="modal-overlay" id="essayEditModal" style="display:none;">
+                            <div class="modal-card">
+                                <div class="modal-header">
+                                    <h3 id="essayEditTitle">新建作文</h3>
+                                    <button class="modal-close" id="essayEditClose" aria-label="关闭"><span class="material-symbols-outlined">close</span></button>
+                                </div>
+                                <div class="modal-body">
+                                    <input type="text" id="essayFTitle" class="essay-title-input st-input" placeholder="标题（可选，默认取首句）" maxlength="80">
+                                    <label class="field-label">英文全文</label>
+                                    <textarea id="essayFContent" class="st-input st-textarea" rows="7" placeholder="粘贴或输入英文作文…"></textarea>
+                                    <label class="field-label">中文翻译</label>
+                                    <textarea id="essayFTrans" class="st-input st-textarea" rows="3" placeholder="中文翻译…"></textarea>
+                                    <label class="field-label">写作笔记</label>
+                                    <textarea id="essayFNotes" class="st-input st-textarea" rows="2" placeholder="写作思路、亮点、待改进…"></textarea>
+                                    <label class="field-label">分类</label>
+                                    <div class="essay-cat-pick" id="essayCatPick"></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn-ghost" id="essayEditCancel">取消</button>
+                                    <button class="btn-primary" id="essaySaveBtn">保存</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 作文查看弹窗 -->
+                        <div class="modal-overlay" id="essayViewModal" style="display:none;">
+                            <div class="modal-card">
+                                <div class="modal-header">
+                                    <h3 id="essayViewTitle">作文</h3>
+                                    <button class="modal-close" id="essayViewClose" aria-label="关闭"><span class="material-symbols-outlined">close</span></button>
+                                </div>
+                                <div class="modal-body" id="essayViewBody"></div>
+                                <div class="modal-footer essay-view-actions">
+                                    <button class="btn-ghost" id="essayEditFromView">编辑</button>
+                                    <button class="btn-ghost" id="essayMoveCatBtn">移动分类</button>
+                                    <button class="btn-ghost" id="essayFavBtn">☆ 收藏</button>
+                                    <button class="btn-ghost danger" id="essayDelBtn">删除</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 分类管理弹窗 -->
+                        <div class="modal-overlay" id="essayCatModal" style="display:none;">
+                            <div class="modal-card">
+                                <div class="modal-header">
+                                    <h3>分类管理</h3>
+                                    <button class="modal-close" id="essayCatClose" aria-label="关闭"><span class="material-symbols-outlined">close</span></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="add-bar">
+                                        <input type="text" id="essayNewCatName" class="st-input" placeholder="新分类名称" maxlength="20">
+                                        <button class="btn-primary" id="essayAddCatBtn">添加</button>
+                                    </div>
+                                    <div class="essay-cat-manage-list" id="essayCatManageList"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 移动分类弹窗 -->
+                        <div class="modal-overlay" id="essayMoveModal" style="display:none;">
+                            <div class="modal-card">
+                                <div class="modal-header">
+                                    <h3>移动分类</h3>
+                                    <button class="modal-close" id="essayMoveClose" aria-label="关闭"><span class="material-symbols-outlined">close</span></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="essay-cat-pick" id="essayMoveCats"></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn-primary" id="essayMoveSave">保存</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 选区浮动：加入词汇本 -->
+                        <button class="essay-sel-add" id="essaySelAdd" style="display:none;">＋ 加入词汇本</button>
+                    </div>
+                </section>
+
+                <!-- ===================== 灵感游戏 ===================== -->
+                <section class="page" id="page-inspire">
+                    <div class="st-content">
+                        <div class="tab-row" id="inspireTabs">
+                            <button class="tab-chip active" data-sub="capsule">灵感扭蛋机</button>
+                            <button class="tab-chip" data-sub="silk">海上丝路</button>
+                        </div>
+
+                        <!-- 星宿扭蛋抽卡模拟器 -->
+                        <div id="capsuleView">
+                            <iframe src="gacha.html?v=20260731au" title="星宿流转抽卡模拟器"></iframe>
+                        </div>
+
+                        <!-- 海上丝路贸易模拟 -->
+                        <div id="silkView" style="display:none;">
+                            <div id="silkSetup" class="silk-setup st-card st-card--hero st-flex-col st-gap-2">
+                                <div class="silk-title">海上丝路 · 贸易模拟</div>
+                                <p class="silk-desc">在港口间低买高卖，借「四海逸闻」预判行情，30 或 50 轮后结算财富。</p>
+                                <div class="silk-stat-line">初始金币 <b>2000</b> · 初始仓库容量 <b>200</b></div>
+                                <div class="silk-stat-line">星轨结晶 <b id="silkCrystalBalance">0</b> · 每日默认 +20,000</div>
+                                <div class="silk-mode-pick">
+                                    <button class="mode-chip active" data-rounds="30">30 轮模式</button>
+                                    <button class="mode-chip" data-rounds="50">50 轮模式</button>
+                                </div>
+                                <button class="btn-primary btn-block" id="silkStartBtn">启航</button>
+                                <button class="btn-ghost btn-block" id="silkRankBtn">🏆 查看排行榜</button>
+                            </div>
+                            <div id="silkGame" style="display:none;">
+                                <!-- 顶栏：远航进度 + 当前资金 + 头像 -->
+                                <header class="sn-header">
+                                    <div class="sn-h-left">
+                                        <span class="material-symbols-outlined sn-h-sail">sailing</span>
+                                        <div class="sn-h-text">
+                                            <span class="sn-h-label">远航进度</span>
+                                            <span class="sn-h-val" id="silkRoundLabel">第 1 / 30 轮</span>
+                                        </div>
+                                    </div>
+                                    <div class="sn-h-right">
+                                        <div class="sn-h-funds">
+                                            <span class="sn-h-label">当前资金</span>
+                                            <div class="sn-h-fund"><span class="material-symbols-outlined">monetization_on</span><span id="silkGold">2000</span></div>
+                                        </div>
+                                        <button class="sn-h-exit" id="silkExitBtn">离港</button>
+                                        <div class="sn-h-avatar"><span class="material-symbols-outlined">person</span></div>
+                                    </div>
+                                </header>
+
+                                <!-- 滚动内容 -->
+                                <div class="sn-body sn-scroll">
+                                    <!-- 四海邮报 状态卡 -->
+                                    <section class="sn-status sn-glass">
+                        <div class="sn-news-ic"><span class="material-symbols-outlined">campaign</span></div>
+                        <div class="sn-news-main">
+                            <span class="sn-news-tag">四海邮报</span>
+                            <p class="sn-news-text" id="silkNewsText">本港风平浪静，暂无逸闻。</p>
+                        </div>
+                    </section>
+
+                                    <!-- 市集行情 -->
+                                    <section class="sn-market-sec">
+                                        <div class="sn-sec-head">
+                                            <h2 class="sn-sec-title"><span class="material-symbols-outlined">storefront</span>市集行情</h2>
+                                            <div class="sn-sec-right">
+                                                <span class="sn-port-pill" id="silkPortName">合浦港</span>
+                                                <button class="sn-link-btn" id="silkSortBtn"><span class="material-symbols-outlined">trending_up</span>价格走势</button>
+                                            </div>
+                                        </div>
+                                        <div class="sn-goods-grid" id="silkGoodsGrid"></div>
+                                    </section>
+
+                                    <!-- 货仓 -->
+                                    <section class="sn-cargo-sec">
+                                        <div class="sn-cap-head-row">
+                                            <span class="sn-cap-label">货仓容量</span>
+                                            <span class="sn-cap-num" id="silkCapLabel">0 / 200 担</span>
+                                            <button class="sn-expand-btn" id="silkExpandBtn">扩容</button>
+                                        </div>
+                                        <div class="sn-cap-bar"><div class="sn-cap-fill" id="silkCapBar"></div></div>
+                                        <div class="sn-warehouse sn-scroll" id="silkWarehouseList"></div>
+                                    </section>
+                                </div>
+
+                                <!-- 底部吸附：下一轮 -->
+                                <div class="sn-bottom">
+                                    <button class="sn-next-btn" id="silkNextBtn">下一轮 <span class="material-symbols-outlined">arrow_forward</span></button>
+                                </div>
+
+                                <!-- 交易底栏（点选货物弹出） -->
+                                <div class="sn-sheet" id="silkSheet">
+                                    <div class="sn-sheet-card">
+                                        <div class="sn-sheet-top">
+                                            <div class="sn-sheet-info">
+                                                <span class="sn-sheet-name" id="silkSheetName">—</span>
+                                                <span class="sn-sheet-price" id="silkSheetPrice">单价: -- 两</span>
+                                            </div>
+                                            <button class="sn-sheet-close" id="silkSheetClose" aria-label="关闭"><span class="material-symbols-outlined">close</span></button>
+                                        </div>
+                                        <div class="sn-stepper">
+                                            <button id="silkQtyMinus" aria-label="减少"><span class="material-symbols-outlined">remove</span></button>
+                                            <div class="sn-qty"><input type="number" id="silkQtyInput" min="1" value="1"><span>担</span></div>
+                                            <button id="silkQtyPlus" aria-label="增加"><span class="material-symbols-outlined">add</span></button>
+                                        </div>
+                                        <div class="sn-sheet-btns">
+                                            <button class="sn-sell" id="silkSellBtn">卖出</button>
+                                            <button class="sn-buy" id="silkBuyBtn">买入</button>
+                                        </div>
+                                        <div class="sn-sheet-meta">
+                                            <span>预计花费: <b id="silkTradeCost">--</b></span>
+                                            <span>占用舱位: <span id="silkTradeCap">--</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="silkResult" style="display:none;" class="silk-result st-card st-card--hero st-flex-col st-gap-2">
+                                <div class="silk-title">航程结算</div>
+                                <div class="silk-result-score" id="silkFinalScore">0</div>
+                                <div class="silk-result-label">结算总资产</div>
+                                <div class="silk-result-detail" id="silkResultDetail"></div>
+                                <div class="silk-claim" id="silkClaimBox" style="display:none;">
+                                    <div class="silk-claim-info" id="silkClaimInfo"></div>
+                                    <button class="btn-primary btn-block" id="silkClaimBtn">领取星轨结晶</button>
+                                </div>
+                                <div class="silk-rank-title" id="silkRankTitle">🏆 排行榜</div>
+                                <div class="silk-rank-list" id="silkRank"></div>
+                                <button class="btn-primary btn-block" id="silkRestartBtn">再来一局</button>
+                            </div>
+                            <div id="silkRankModal" class="silk-rank-modal" style="display:none;">
+                                <div class="silk-rank-modal-box">
+                                    <div class="silk-rank-modal-head"><span>🏆 排行榜</span><button class="silk-rank-close" id="silkRankClose" aria-label="关闭"><span class="material-symbols-outlined">close</span></button></div>
+                                    <div class="silk-mode-pick"><button class="mode-chip active" data-rtab="30">30 轮榜</button><button class="mode-chip" data-rtab="50">50 轮榜</button></div>
+                                    <div class="silk-rank-list" id="silkRankModalList"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===================== 热点视频追寻 ===================== -->
+                <section class="page" id="page-video">
+                    <div class="st-content tv-content">
+                        <div class="tv-header">
+                            <div>
+                                <h1 class="tv-title">热点灵感</h1>
+                                <p class="tv-subtitle">发现今天正在刷屏的内容 · 每日 09:00 自动采集</p>
+                            </div>
+                            <button class="tv-filter-btn" id="videoFilterBtn" aria-label="筛选"><span class="material-symbols-outlined">tune</span></button>
+                        </div>
+                        <div class="tv-search">
+                            <span class="material-symbols-outlined">search</span>
+                            <input type="text" id="videoSearch" placeholder="搜索当前平台的视频或用户" maxlength="40" autocomplete="off">
+                            <button class="tv-search-clear" id="videoSearchClear" aria-label="清除" style="display:none;"><span class="material-symbols-outlined">close</span></button>
+                        </div>
+                        <div class="tv-link-parse">
+                            <span class="material-symbols-outlined">link</span>
+                            <input type="text" id="videoLinkInput" placeholder="粘贴短视频分享链接，一键拆解爆点" maxlength="400" autocomplete="off">
+                            <button class="tv-parse-btn" id="videoParseBtn"><span class="material-symbols-outlined">auto_awesome</span>解析</button>
+                        </div>
+                        <div class="tv-platforms" id="videoPlatformTabs">
+                            <button class="tv-chip active" data-platform="douyin"><span class="pulse-dot"></span>抖音</button>
+                            <button class="tv-chip" data-platform="kuaishou">快手</button>
+                            <button class="tv-chip" data-platform="bilibili">B站</button>
+                            <button class="tv-chip" data-platform="xiaohongshu">小红书</button>
+                            <button class="tv-chip" data-platform="saved">⭐ 收藏</button>
+                        </div>
+                        <div class="video-feed" id="videoFeed"></div>
+                    </div>
+                </section>
+
+                <!-- ===================== 备忘录 & AI助手 ===================== -->
+                <section class="page" id="page-memo">
+                    <div class="st-content">
+                        <div class="tab-row" id="memoTabs">
+                            <button class="tab-chip active" data-sub="notes">备忘录</button>
+                            <button class="tab-chip" data-sub="ai">AI 助手</button>
+                        </div>
+                        <div id="notesView">
+                            <div class="memo-filters" id="memoFilters">
+                                <button class="memo-filter active" data-filter="all">全部</button>
+                                <button class="memo-filter" data-filter="idea">创意</button>
+                                <button class="memo-filter" data-filter="todo">待办</button>
+                                <button class="memo-filter" data-filter="important">重要</button>
+                            </div>
+                            <div class="memo-masonry" id="memoList"></div>
+                            <button class="memo-fab" id="memoFab" aria-label="添加备忘录">
+                                <span class="material-symbols-outlined">add</span>
+                            </button>
+                        </div>
+
+                        <!-- 添加/编辑备忘录模态框 -->
+                        <div class="memo-modal" id="memoModal" style="display:none;">
+                            <div class="memo-modal-backdrop" id="memoModalBackdrop"></div>
+                            <div class="memo-modal-sheet">
+                                <div class="memo-modal-header">
+                                    <h3 id="memoModalTitle">新建便签</h3>
+                                    <button class="memo-modal-close" id="memoModalClose" aria-label="关闭"><span class="material-symbols-outlined">close</span></button>
+                                </div>
+                                <div class="memo-modal-body">
+                                    <input type="text" id="memoTitleInput" class="st-input" placeholder="标题（选填）" maxlength="40">
+                                    <div class="memo-tag-select" id="memoTagSelect">
+                                        <button class="memo-tag-chip active" data-tag="idea">创意</button>
+                                        <button class="memo-tag-chip" data-tag="todo">待办</button>
+                                        <button class="memo-tag-chip" data-tag="important">重要</button>
+                                        <button class="memo-tag-chip" data-tag="general">普通</button>
+                                    </div>
+                                    <textarea id="memoContentInput" class="st-input st-textarea" placeholder="写点什么..." rows="4" maxlength="1200"></textarea>
+                                    <div class="memo-image-preview" id="memoImagePreview"></div>
+                                    <div class="memo-modal-actions">
+                                        <label class="memo-image-btn" for="memoImageInput">
+                                            <span class="material-symbols-outlined">image</span>添加图片
+                                        </label>
+                                        <input type="file" id="memoImageInput" accept="image/*" style="display:none;">
+                                        <button class="memo-image-btn" id="memoTodoLineBtn" type="button">
+                                            <span class="material-symbols-outlined">check_box</span>添加待办
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="memo-modal-footer">
+                                    <button class="memo-save-btn" id="memoSaveBtn">保存</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="aiView" style="display:none;">
+                            <div class="ai-settings" id="aiSettings">
+                                <div class="ai-settings-toggle" id="aiSettingsToggle">
+                                    <span>⚙️ API 设置</span>
+                                    <span class="ai-settings-hint" id="aiSettingsStatus">未配置 · 演示模式</span>
+                                </div>
+                                <div class="ai-settings-body" id="aiSettingsBody" style="display:none;">
+                                    <label>API 地址（OpenAI 兼容）<input type="text" id="aiEndpoint" class="st-input" placeholder="https://api.openai.com/v1/chat/completions" maxlength="200"></label>
+                                    <label>API Key<input type="password" id="aiKey" class="st-input" placeholder="sk-..." maxlength="200"></label>
+                                    <label>模型名<input type="text" id="aiModel" class="st-input" placeholder="gpt-4o-mini" maxlength="60"></label>
+                                    <button class="btn-ghost btn-block" id="aiSaveSettings">保存设置</button>
+                                </div>
+                            </div>
+                            <div class="ai-chat" id="aiChat"></div>
+                            <div class="ai-quick">
+                                <button class="quick-chip" data-q="帮我写一个短视频脚本大纲">脚本大纲</button>
+                                <button class="quick-chip" data-q="把这句话翻译成英文，保持口语化">翻译</button>
+                                <button class="quick-chip" data-q="给我3个选题方向做头脑风暴">头脑风暴</button>
+                                <button class="quick-chip" data-q="整理一下我的创作思路">梳理思路</button>
+                            </div>
+                            <div class="ai-input-bar">
+                                <textarea id="aiInput" placeholder="问问 AI 助手..." rows="1" maxlength="2000"></textarea>
+                                <button class="ai-send" id="aiSendBtn"><span class="material-symbols-outlined">arrow_upward</span></button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===================== 设置中心 ===================== -->
+                <section class="page" id="page-settings">
+                    <div class="st-content">
+                        <div class="settings-theme-card st-card st-card--hero st-card--press" id="settingsThemeCard">
+                            <div class="settings-theme-layer settings-theme-day" id="themeDayLayer">
+                                <div class="settings-theme-preview">
+                                    <div></div><span class="material-symbols-outlined">light_mode</span>
+                                </div>
+                                <p>日间模式</p>
+                            </div>
+                            <div class="settings-theme-layer settings-theme-night active" id="themeNightLayer">
+                                <div class="settings-theme-preview"><div></div><span class="material-symbols-outlined">dark_mode</span></div>
+                                <p>夜间模式</p>
+                            </div>
+                            <div class="settings-theme-badge"><span class="pulse"></span>点击切换</div>
+                        </div>
+                        <div class="settings-section">
+                            <span class="st-label" style="margin:1rem 0 .5rem .5rem;display:block;">设置项</span>
+                            <div class="st-card" style="padding:.5rem;">
+                                <button class="settings-row" id="settingsApiBtn"><span class="material-symbols-outlined">api</span><div><b>API 服务商</b><span>兼容 OpenAI 与 Anthropic</span></div><span class="material-symbols-outlined">chevron_right</span></button>
+                                <button class="settings-row" id="settingsDataBtn"><span class="material-symbols-outlined">database</span><div><b>本地数据</b><span>导出、备份与恢复</span></div><span class="material-symbols-outlined">chevron_right</span></button>
+                            </div>
+                        </div>
+                        <div class="settings-section">
+                            <span class="st-label" style="margin:1rem 0 .5rem .5rem;display:block;">关于</span>
+                            <div class="st-card" style="padding:.5rem;">
+                                <div class="settings-row"><span class="material-symbols-outlined">flare</span><div><b>关于夏天</b><span>版本 2.4.1（Stitch 构建）</span></div><span class="material-symbols-outlined">chevron_right</span></div>
+                            </div>
+                            <div class="settings-about">
+                                <div class="settings-logo"><span class="material-symbols-outlined">spa</span></div>
+                                <p class="st-body-sm">为静谧创作而生。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- 底部导航 -->
+        <nav id="bottomNav">
+            <div class="inner">
+                <button class="st-nav-item active" data-page="words">
+                    <span class="material-symbols-outlined">menu_book</span>
+                    <span>每日单词</span>
+                </button>
+                <button class="st-nav-item" data-page="inspire">
+                    <span class="material-symbols-outlined">extension</span>
+                    <span>灵感游戏</span>
+                </button>
+                <button class="st-nav-item" data-page="video">
+                    <span class="material-symbols-outlined">movie_edit</span>
+                    <span>热点视频</span>
+                </button>
+                <button class="st-nav-item" data-page="memo">
+                    <span class="material-symbols-outlined">sticky_note_2</span>
+                    <span>备忘录</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="js/cet4_words.js?v=20260731au"></script>
+    <script src="js/basic_words.js?v=20260731au"></script>
+    <script src="js/data.js?v=20260731au"></script>
+    <script src="js/store.js?v=20260731au"></script>
+    <script src="js/words.js?v=20260731au"></script>
+    <script src="js/essay.js?v=20260731au"></script>
+    <script src="js/stats.js?v=20260731au"></script>
+    <script src="js/inspire.js?v=20260731au"></script>
+    <script src="js/video.js?v=20260731au"></script>
+    <script src="js/memo.js?v=20260731au"></script>
+    <script src="js/settings.js?v=20260731au"></script>
+    <script src="js/app.js?v=20260731au"></script>
+</body>
+</html>
